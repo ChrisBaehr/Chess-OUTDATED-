@@ -1,6 +1,6 @@
 ### Introduction
 
-Hi, this is a very early version of my Chess App written in Python with TomSchimansky's CustomTkinter as the GUI foundation. The interface is kept straight forward and very intuitive. The raw code is divided into sections with various comments improving the readability. The IDE of choice was PyCharm.
+Hi, this is a very early version of my Chess App written in Python with TomSchimansky's CustomTkinter as the GUI foundation. The interface is kept straight forward and very intuitive. The raw code is divided into sections with various comments improving the readability.
 
 ⠀
 ### Playability
