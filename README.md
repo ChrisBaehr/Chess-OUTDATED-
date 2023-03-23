@@ -10,7 +10,7 @@ Chess games can already be played to almost the fullest extent, with only a few 
     • Stalemate / Draw
     • Checkmates depending on a piece being pinned to the king
 
-Apart from that I've made sure to add every other rule I could think of, even the less common ones. Here is a short list:
+Apart from that I've made sure to add every other rule I could think of, even the less common ones:
     
     • Pinned pieces
     • Castling king and queen side
