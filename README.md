@@ -5,7 +5,7 @@ Hi, this is a very early version of my Chess App written in Python with TomSchim
 ⠀
 ### Playability
 
-Chess games can already be played to almost the fullest extent, with only a few game interactions missing, such as:
+Chess games can already be played with only a few game interactions missing:
 
     • Stalemate / Draw
     • Checkmates depending on a piece being pinned to the king
