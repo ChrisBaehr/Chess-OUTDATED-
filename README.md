@@ -21,7 +21,7 @@ Apart from that I've made sure to add every other rule I could think of, even th
 ⠀
 ### Code Quality
 
-As this literally is one of my first programming projects, don't expect overly fancy coding techniques. Most of the problem solving was done with basic coding knowledge. When taking a look at the raw code, you will notice headings written in all caps to divide different parts of the code. Whilse trying not to overdo code commenting to keep it visually appealing and minimalistic, I added a comment where the purpose of the line might not be obvious right away. Every function has a short explanation of what it does at the top. Blocks of code that could look confusing have a brief summary of what they do above them.
+As this literally is one of my first programming projects, don't expect overly fancy coding techniques. Most of the problem-solving was done with basic coding knowledge. When taking a look at the raw code, you will notice headings written in all caps to divide different parts of the code. Whilst trying not to overdo code commenting to keep it visually appealing and minimalistic, I added a comment where the purpose of the line might not be obvious right away. Every function has a short explanation of what it does at the top. Blocks of code that could look confusing have a brief summary of what they do above them.
 
 ⠀
 ### GUI Customization
