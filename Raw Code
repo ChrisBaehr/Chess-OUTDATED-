@@ -1,4 +1,4 @@
-```Python
+```ruby
 import customtkinter as ctk
 from tkinter import colorchooser
 
