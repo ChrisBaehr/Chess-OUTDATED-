@@ -1,12 +1,5 @@
-```python
 import customtkinter as ctk
 from tkinter import colorchooser
-
-
-# STALEMATE
-# pinned pieces are still considered to be able to block even if they cannot and its checkmate
-# track all moves with notations: d4, d5, Nf6, etc...
-# paste move notations (d4, d5, Nf6, etc...) to get a scenario in puzzle builder
 
 
 # COLOR CUSTOMIZATION #
@@ -1241,4 +1234,3 @@ colorReset = ctk.CTkButton(botFrame,
 colorReset.grid(row=0, column=13)
 
 app.mainloop()
-```
