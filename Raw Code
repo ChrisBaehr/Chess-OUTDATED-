@@ -1,4 +1,4 @@
-´´´ Python
+´´´Python
 import customtkinter as ctk
 from tkinter import colorchooser
 
@@ -1241,4 +1241,4 @@ colorReset = ctk.CTkButton(botFrame,
 colorReset.grid(row=0, column=13)
 
 app.mainloop()
-´´
+´´´
