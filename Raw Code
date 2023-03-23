@@ -2,6 +2,12 @@ import customtkinter as ctk
 from tkinter import colorchooser
 
 
+# STALEMATE
+# pinned pieces are still considered to be able to block even if they cannot and its checkmate
+# track all moves with notations: d4, d5, Nf6, etc...
+# paste move notations (d4, d5, Nf6, etc...) to get a scenario in puzzle builder
+
+
 # COLOR CUSTOMIZATION #
 
 
@@ -82,12 +88,12 @@ class Pawn(Piece):
         r2 = row+directions[1]   # row + 2 / - 2
         c = column
 
-        if is_free(r1, c):
-            enable_move(r1, c)
+        if free(r1, c):
+            allow(r1, c)
 
             # allows advancing two squares at once if pawn is on starting position
-            if row == start_pos and is_free(r2, c):
-                enable_move(r2, c)
+            if row == start_pos and free(r2, c):
+                allow(r2, c)
 
                 # if advancing two squares forward would allow for en passant: save as potential en passant
                 if c - 1 >= 0 and board[r2][c - 1].cget("text") == "♟" \
@@ -98,10 +104,10 @@ class Pawn(Piece):
                     pot_en_passant.append([r1, c])
 
         # allow pawn to capture enemy pieces
-        if column+1 <= 7 and is_capture(r1, c+1, enemy_color) or en_passant.count([r1, c+1]):
-            enable_move(r1, column+1)
-        if column-1 >= 0 and is_capture(r1, c-1, enemy_color) or en_passant.count([r1, c-1]):
-            enable_move(r1, c-1)
+        if column+1 <= 7 and capture(r1, c + 1, enemy_color) or en_passant.count([r1, c + 1]):
+            allow(r1, column + 1)
+        if column-1 >= 0 and capture(r1, c - 1, enemy_color) or en_passant.count([r1, c - 1]):
+            allow(r1, c - 1)
 
 
 class Knight(Piece):
@@ -125,8 +131,8 @@ class Knight(Piece):
             c = column + directions[d][1]
 
             if 0 <= r <= 7 and 0 <= c <= 7:   # if position is on the board
-                if is_capture(r, c, enemy_color) or is_free(r, c):
-                    enable_move(r, c)
+                if capture(r, c, enemy_color) or free(r, c):
+                    allow(r, c)
 
 
 class Rook(Piece):
@@ -151,10 +157,10 @@ class Rook(Piece):
                 c = column + directions[d][1]
 
                 if 0 <= r <= 7 and 0 <= c <= 7:   # if destination is on the board
-                    if is_free(r, c):   # enable move and try next square
-                        enable_move(r, c)
-                    elif is_capture(r, c, enemy_color):   # enable move and switch direction
-                        enable_move(r, c)
+                    if free(r, c):   # enable move and try next square
+                        allow(r, c)
+                    elif capture(r, c, enemy_color):   # enable move and switch direction
+                        allow(r, c)
                         continue
                     else:   # destination has friendly piece, switch directions
                         continue
@@ -188,10 +194,10 @@ class Bishop(Piece):
                 c = column + directions[d][1]
 
                 if 0 <= r <= 7 and 0 <= c <= 7:
-                    if is_free(r, c):   # enable move and try next square
-                        enable_move(r, c)
-                    elif is_capture(r, c, enemy_color):   # enable move and switch direction
-                        enable_move(r, c)
+                    if free(r, c):   # enable move and try next square
+                        allow(r, c)
+                    elif capture(r, c, enemy_color):   # enable move and switch direction
+                        allow(r, c)
                         continue
                     else:   # destination has friendly piece, switch direction
                         continue
@@ -223,10 +229,10 @@ class Queen(Piece):
                 r = row + directions[d][0]
                 c = column + directions[d][1]
                 if 0 <= r <= 7 and 0 <= c <= 7:   # if destination is on the board
-                    if is_free(r, c):   # enable move and try next square
-                        enable_move(r, c)
-                    elif is_capture(r, c, enemy_color):   # enable move and switch direction
-                        enable_move(r, c)
+                    if free(r, c):   # enable move and try next square
+                        allow(r, c)
+                    elif capture(r, c, enemy_color):   # enable move and switch direction
+                        allow(r, c)
                         continue
                     else:   # destination has friendly piece, switch direction
                         continue
@@ -255,16 +261,16 @@ class King(Piece):
 
         # enable castling if: involved pieces have not been moved yet, have no pieces in between & are not under attack
         if castle.count([row, column]) and castle.count([row, 6]):
-            if is_free(row, column + 1) and not can_be_seen(row, column + 1, enemy_color, row, column) \
-                    and is_free(row, column + 2) and not can_be_seen(row, column + 2, enemy_color, row, column):
-                enable_move(row, column + 2)
+            if free(row, column + 1) and not visible(row, column + 1, enemy_color, row, column) \
+                    and free(row, column + 2) and not visible(row, column + 2, enemy_color, row, column):
+                allow(row, column + 2)
 
         # enable castling if: involved pieces have not been moved yet, have no pieces in between & are not under attack
         if castle.count([row, column]) and castle.count([row, 2]):
-            if is_free(row, column - 1) and not can_be_seen(row, column - 1, enemy_color, row, column) \
-                and is_free(row, column - 2) and not can_be_seen(row, column - 2, enemy_color, row, column) \
-                    and is_free(row, column - 3):
-                enable_move(row, column - 2)
+            if free(row, column - 1) and not visible(row, column - 1, enemy_color, row, column) \
+                and free(row, column - 2) and not visible(row, column - 2, enemy_color, row, column) \
+                    and free(row, column - 3):
+                allow(row, column - 2)
 
         for d in range(len(directions)):
 
@@ -273,22 +279,22 @@ class King(Piece):
 
             if 0 <= r <= 7 and 0 <= c <= 7:   # if destination is on the board
                 # enable move & try next square if: is free, would not result in check & kings would not be side by side
-                if not king_spacer(r, c) and not can_be_seen(r, c, enemy_color, r, c) and is_free(r, c) \
-                        or not king_spacer(r, c) and not can_be_seen(r, c, enemy_color, r, c) and is_capture(r, c, enemy_color):
-                    enable_move(r, c)
+                if not king_spacer(r, c) and not visible(r, c, enemy_color, r, c) and free(r, c) \
+                        or not king_spacer(r, c) and not visible(r, c, enemy_color, r, c) and capture(r, c, enemy_color):
+                    allow(r, c)
 
 
 # BUTTON INTERACTION #
 
 
-def pressed(row, column):
+def button_press(row, column):
     global moves, last_piece, color, enemy_color, last_loc, atk_piece, castle, en_passant, en_passant_dur, pot_en_passant
     # response to pressing a button on the game board
 
     color = player1 if moves % 2 == 0 else player2
     enemy_color = player1 if color == player2 else player2
     chess_pattern()   # clears move previews
-    castling_pieces_move_history()   # tracks rook and king movement
+    castling_history()   # tracks rook and king movement
 
     board[row][column].configure(fg_color=selected_piece)  # visualization of selected piece
     piece = Piece(row, column, board[row][column].cget("text"))
@@ -330,14 +336,14 @@ def pressed(row, column):
             en_passant = [] if en_passant_dur <= moves else en_passant
 
             # resets move if it would result in own king check
-            if king_check() and king_color_atk == color:
+            if check() and king_color_atk == color:
                 board[last_loc[0]][last_loc[1]].configure(text=last_piece, text_color=color, text_color_disabled=color)
                 board[row][column].configure(text=temp_piece, text_color=temp_color, text_color_disabled=temp_color)
 
             # disables all buttons if game ended
-            elif king_check() and board[white_king[0]][white_king[1]].cget("fg_color") == "#023020" \
-                    or king_check() and board[black_king[0]][black_king[1]].cget("fg_color") == "#023020":
-                disable_all_buttons()
+            elif check() and board[white_king[0]][white_king[1]].cget("fg_color") == "#023020" \
+                    or check() and board[black_king[0]][black_king[1]].cget("fg_color") == "#023020":
+                disable_all()
             else:
                 moves += 1
                 last_piece = ""
@@ -346,12 +352,12 @@ def pressed(row, column):
         # activate piece selection if a pawn reaches the 8th rank
         if board[row][column].cget("text") == "♟" and row == 0 or row == 7 and board[row][column].cget("text") == "♟":
             pawn_color = player1 if row == 0 else player2
-            disable_all_buttons()
+            disable_all()
 
-            queen_button.configure(state="normal", fg_color="#023020", text_color=pawn_color)
-            rook_button.configure(state="normal", fg_color="#023020", text_color=pawn_color)
-            knight_button.configure(state="normal", fg_color="#023020", text_color=pawn_color)
-            bishop_button.configure(state="normal", fg_color="#023020", text_color=pawn_color)
+            queenPiece.configure(state="normal", fg_color="#023020", text_color=pawn_color)
+            rookPiece.configure(state="normal", fg_color="#023020", text_color=pawn_color)
+            knightPiece.configure(state="normal", fg_color="#023020", text_color=pawn_color)
+            bishopPiece.configure(state="normal", fg_color="#023020", text_color=pawn_color)
 
     elif piece.name == "♟":
         pawn = Pawn(row, column)
@@ -376,24 +382,24 @@ def pressed(row, column):
 # MOVEMENT #
 
 
-def is_free(r, c):
+def free(r, c):
     # returns True if location is empty
     if board[r][c].cget("text") == "":
         return True
 
 
-def is_capture(r, c, color_enemy):
+def capture(r, c, color_enemy):
     # returns True if location has enemy piece on it
     if board[r][c].cget("text") != "" and board[r][c].cget("text_color") == color_enemy:
         return True
 
 
-def enable_move(r, c):
+def allow(r, c):
     # enables button and changes fg_color to visualize the possible move
     board[r][c].configure(state="normal", fg_color=move_preview, border_width=6, border_color=selected_piece)
 
 
-def castling_pieces_move_history():
+def castling_history():
     global castle
     # denies castling when a piece involved was moved
 
@@ -412,7 +418,7 @@ def castling_pieces_move_history():
         castle.remove([7, 6])
 
 
-def legal_king_moves(row, column, color_enemy):
+def king_movement(row, column, color_enemy):
     # returns True if the king has legal moves
     directions = [[-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1]]
 
@@ -422,8 +428,8 @@ def legal_king_moves(row, column, color_enemy):
 
         if 0 <= r <= 7 and 0 <= c <= 7:
             # king has at least 1 square he can safely move to
-            if not king_spacer(r, c) and not can_be_seen(r, c, color_enemy, r, c) and is_free(r, c) \
-                    or not king_spacer(r, c) and not can_be_seen(r, c, color_enemy, r, c) and is_capture(r, c, color_enemy):
+            if not king_spacer(r, c) and not visible(r, c, color_enemy, r, c) and free(r, c) \
+                    or not king_spacer(r, c) and not visible(r, c, color_enemy, r, c) and capture(r, c, color_enemy):
                 return True
 
 
@@ -458,18 +464,18 @@ def promote(piece):
             last_piece = piece
             pawn_color = player2
 
-    queen_button.configure(state="disabled", fg_color="#242424")
-    rook_button.configure(state="disabled", fg_color="#242424")
-    knight_button.configure(state="disabled", fg_color="#242424")
-    bishop_button.configure(state="disabled", fg_color="#242424")
+    queenPiece.configure(state="disabled", fg_color="#242424")
+    rookPiece.configure(state="disabled", fg_color="#242424")
+    knightPiece.configure(state="disabled", fg_color="#242424")
+    bishopPiece.configure(state="disabled", fg_color="#242424")
     toggle_buttons()
-    king_check()
+    check()
 
 
 # CHECK #
 
 
-def king_check():
+def check():
     global white_king, black_king, atk_piece, king_color_atk
     # returns True if king is in check, locates positions of both kings and declares checkmate
     attacking_piece = []
@@ -488,43 +494,43 @@ def king_check():
                 black_king = [a, b]
 
     # if white is in check, change fg_color of white king to red
-    if can_be_seen(white_king[0], white_king[1], player2, white_king[0], white_king[1]):
+    if visible(white_king[0], white_king[1], player2, white_king[0], white_king[1]):
         board[white_king[0]][white_king[1]].configure(fg_color="#8B0000")
         king_color_atk = player1
 
         # if king is attacked by multiple pieces and is not able to move to safety -> checkmate
-        if len(attacking_piece) >= 2 and not legal_king_moves(white_king[0], white_king[1], player2):
+        if len(attacking_piece) >= 2 and not king_movement(white_king[0], white_king[1], player2):
             board[white_king[0]][white_king[1]].configure(fg_color="#8B0000")
             board[black_king[0]][black_king[1]].configure(fg_color="#023020")
-            disable_all_buttons()
+            disable_all()
 
         # if attack cannot be blocked, the attacker cannot be captured and the king has no legal moves -> checkmate
         elif not check_block(white_king[0], white_king[1], player1) \
-                and not can_be_seen(atk_piece[0][0], atk_piece[0][1], player1, atk_piece[0][0], atk_piece[0][1]) \
-                and not legal_king_moves(white_king[0], white_king[1], player2):
+                and not visible(atk_piece[0][0], atk_piece[0][1], player1, atk_piece[0][0], atk_piece[0][1]) \
+                and not king_movement(white_king[0], white_king[1], player2):
             board[white_king[0]][white_king[1]].configure(fg_color="#8B0000")
             board[black_king[0]][black_king[1]].configure(fg_color="#023020")
-            disable_all_buttons()
+            disable_all()
         return True
 
     # if black is in check, change fg_color of black king to red
-    elif can_be_seen(black_king[0], black_king[1], player1, black_king[0], black_king[1]):
+    elif visible(black_king[0], black_king[1], player1, black_king[0], black_king[1]):
         board[black_king[0]][black_king[1]].configure(fg_color="#8B0000")
         king_color_atk = player2
 
         # if king is attacked by multiple pieces and is not able to move to safety -> checkmate
-        if len(attacking_piece) >= 2 and not legal_king_moves(black_king[0], black_king[1], player1):
+        if len(attacking_piece) >= 2 and not king_movement(black_king[0], black_king[1], player1):
             board[black_king[0]][black_king[1]].configure(fg_color="#8B0000")
             board[white_king[0]][white_king[1]].configure(fg_color="#023020")
-            disable_all_buttons()
+            disable_all()
 
         # if attack cannot be blocked, the attacker cannot be captured and the king has no legal moves -> checkmate
         elif not check_block(black_king[0], black_king[1], player2) \
-                and not can_be_seen(atk_piece[0][0], atk_piece[0][1], player2, atk_piece[0][0], atk_piece[0][1]) \
-                and not legal_king_moves(black_king[0], black_king[1], player1):
+                and not visible(atk_piece[0][0], atk_piece[0][1], player2, atk_piece[0][0], atk_piece[0][1]) \
+                and not king_movement(black_king[0], black_king[1], player1):
             board[black_king[0]][black_king[1]].configure(fg_color="#8B0000")
             board[white_king[0]][white_king[1]].configure(fg_color="#023020")
-            disable_all_buttons()
+            disable_all()
         return True
 
 
@@ -552,7 +558,7 @@ def check_block(king_r, king_c, blocking_color):
 
         if 0 <= r <= 7 and 0 <= c <= 7:
             # if position can be seen by own piece -> attack can be blocked
-            if board[r][c].cget("text") == "" and can_be_seen(r, c, blocking_color, r, c):
+            if board[r][c].cget("text") == "" and visible(r, c, blocking_color, r, c):
                 # attacks can only be blocked if the blocking piece is in between king and attacker
                 if loc != king_loc and not atk_piece.count(loc):
                     return True
@@ -568,7 +574,7 @@ def check_block(king_r, king_c, blocking_color):
                   [2, -1], [1, -2], [-1, -2], [1, 2], [-1, 2]]
 
 
-def can_be_seen(row, col, atk_color, orig_r, orig_c):
+def visible(row, col, atk_color, orig_r, orig_c):
     global dir_atk, atk_piece
     # return True if location can be seen by pieces with atk_color
 
@@ -648,21 +654,21 @@ def toggle_buttons():
     enemy_color = player1 if color == player2 else player2
 
     if color == player1:
-        disable_all_buttons()
-        enable_all_white_buttons()
+        disable_all()
+        enable_white()
     else:
-        disable_all_buttons()
-        enable_all_black_buttons()
+        disable_all()
+        enable_black()
 
 
-def disable_all_buttons():
+def disable_all():
     # disables all buttons
     for r in range(8):
         for c in range(8):
             board[r][c].configure(state="disabled")
 
 
-def enable_all_white_buttons():
+def enable_white():
     global player1
     # enables all buttons with white pieces
     for r in range(8):
@@ -671,7 +677,7 @@ def enable_all_white_buttons():
                 board[r][c].configure(state="normal")
 
 
-def enable_all_black_buttons():
+def enable_black():
     global player2
     # enables all buttons with black pieces
     for r in range(8):
@@ -680,7 +686,7 @@ def enable_all_black_buttons():
                 board[r][c].configure(state="normal")
 
 
-def enable_all_buttons():
+def enable_all():
     # enables all buttons -> puzzle builder
     for r in range(8):
         for c in range(8):
@@ -694,7 +700,7 @@ def play():
     global player1, player2, last_piece, last_loc, moves, castle, atk_piece
     # places all pieces to their starting position and resets all variables
 
-    play_button.configure(text="RESET ↺")
+    playGame.configure(text="RESET ↺")
     pieces = ["♜", "♞", "♝", "♛", "♚", "♝", "♞", "♜"]
     castle = [[0, 2], [0, 4], [0, 6], [7, 2], [7, 4], [7, 6]]
     atk_piece = []
@@ -703,7 +709,7 @@ def play():
     moves = 0
 
     # places all pieces to their starting position if puzzle mode is off
-    if pawn_button.cget("state") == "disabled":
+    if pawnPiece.cget("state") == "disabled":
         for r in range(8):
             for c in range(8):
                 if r == 0 or r == 7:
@@ -716,21 +722,21 @@ def play():
                     board[r][c].configure(text="", text_color="blue", text_color_disabled="blue")
     # starts the game with the puzzle scenario
     else:
-        pawn_button.configure(state="disabled", hover_color="#011f14")
-        king_button.configure(state="disabled", hover_color="#011f14")
-        queen_button.configure(state="disabled", hover_color="#011f14", command=lambda piece="♛": promote(piece))
-        rook_button.configure(state="disabled", hover_color="#011f14", command=lambda piece="♜": promote(piece))
-        knight_button.configure(state="disabled", hover_color="#011f14", command=lambda piece="♞": promote(piece))
-        bishop_button.configure(state="disabled", hover_color="#011f14", command=lambda piece="♝": promote(piece))
-        color_button.configure(state="disabled", hover_color="#011f14")
-        clear_all.configure(state="disabled", hover_color="#011f14")
+        pawnPiece.configure(state="disabled", hover_color="#011f14")
+        kingPiece.configure(state="disabled", hover_color="#011f14")
+        queenPiece.configure(state="disabled", hover_color="#011f14", command=lambda piece="♛": promote(piece))
+        rookPiece.configure(state="disabled", hover_color="#011f14", command=lambda piece="♜": promote(piece))
+        knightPiece.configure(state="disabled", hover_color="#011f14", command=lambda piece="♞": promote(piece))
+        bishopPiece.configure(state="disabled", hover_color="#011f14", command=lambda piece="♝": promote(piece))
+        selectedColor.configure(state="disabled", hover_color="#011f14")
+        clearBoard.configure(state="disabled", hover_color="#011f14")
 
         for r in range(8):
             for c in range(8):
-                board[r][c].configure(command=lambda row=r, column=c: pressed(row, column))
+                board[r][c].configure(command=lambda row=r, column=c: button_press(row, column))
 
-    disable_all_buttons()
-    enable_all_white_buttons()
+    disable_all()
+    enable_white()
 
 
 def chess_pattern():
@@ -751,33 +757,33 @@ def chess_pattern():
 
 def settings():
     # displays settings bar
-    if player1_button.cget("state") == "disabled":
-        builder_button.configure(state="normal")
-        player1_button.configure(state="normal")
-        player2_button.configure(state="normal")
-        light_square_button.configure(state="normal")
-        dark_square_button.configure(state="normal")
-        selected_piece_button.configure(state="normal")
-        legal_moves_button.configure(state="normal")
-        color_reset_button.configure(state="normal")
-        splitter = ctk.CTkLabel(bot_menu_bar, text="|", font=("Rubik", 30), text_color="#E5E5E5").grid(row=0, column=3)
-        splitter2 = ctk.CTkLabel(bot_menu_bar, text="|", font=("Rubik", 30), text_color="#E5E5E5").grid(row=0, column=6)
-        splitter3 = ctk.CTkLabel(bot_menu_bar, text="|", font=("Rubik", 30), text_color="#E5E5E5").grid(row=0, column=9)
-        splitter4 = ctk.CTkLabel(bot_menu_bar, text="|", font=("Rubik", 30), text_color="#E5E5E5").grid(row=0, column=12)
+    if playerOne.cget("state") == "disabled":
+        puzzleMode.configure(state="normal")
+        playerOne.configure(state="normal")
+        playerTwo.configure(state="normal")
+        lightSquare.configure(state="normal")
+        darkSquare.configure(state="normal")
+        selectedPiece.configure(state="normal")
+        movePreview.configure(state="normal")
+        colorReset.configure(state="normal")
+        splitter = ctk.CTkLabel(botFrame, text="|", font=("Rubik", 30), text_color="#E5E5E5").grid(row=0, column=3)
+        splitter2 = ctk.CTkLabel(botFrame, text="|", font=("Rubik", 30), text_color="#E5E5E5").grid(row=0, column=6)
+        splitter3 = ctk.CTkLabel(botFrame, text="|", font=("Rubik", 30), text_color="#E5E5E5").grid(row=0, column=9)
+        splitter4 = ctk.CTkLabel(botFrame, text="|", font=("Rubik", 30), text_color="#E5E5E5").grid(row=0, column=12)
     # hides settings bar
     else:
-        builder_button.configure(state="disabled")
-        player1_button.configure(state="disabled")
-        player2_button.configure(state="disabled")
-        light_square_button.configure(state="disabled")
-        dark_square_button.configure(state="disabled")
-        selected_piece_button.configure(state="disabled")
-        legal_moves_button.configure(state="disabled")
-        color_reset_button.configure(state="disabled")
-        splitter = ctk.CTkLabel(bot_menu_bar, text="|", font=("Rubik", 30), text_color="#242424").grid(row=0, column=3)
-        splitter2 = ctk.CTkLabel(bot_menu_bar, text="|", font=("Rubik", 30), text_color="#242424").grid(row=0, column=6)
-        splitter3 = ctk.CTkLabel(bot_menu_bar, text="|", font=("Rubik", 30), text_color="#242424").grid(row=0, column=9)
-        splitter4 = ctk.CTkLabel(bot_menu_bar, text="|", font=("Rubik", 30), text_color="#242424").grid(row=0, column=12)
+        puzzleMode.configure(state="disabled")
+        playerOne.configure(state="disabled")
+        playerTwo.configure(state="disabled")
+        lightSquare.configure(state="disabled")
+        darkSquare.configure(state="disabled")
+        selectedPiece.configure(state="disabled")
+        movePreview.configure(state="disabled")
+        colorReset.configure(state="disabled")
+        splitter = ctk.CTkLabel(botFrame, text="|", font=("Rubik", 30), text_color="#242424").grid(row=0, column=3)
+        splitter2 = ctk.CTkLabel(botFrame, text="|", font=("Rubik", 30), text_color="#242424").grid(row=0, column=6)
+        splitter3 = ctk.CTkLabel(botFrame, text="|", font=("Rubik", 30), text_color="#242424").grid(row=0, column=9)
+        splitter4 = ctk.CTkLabel(botFrame, text="|", font=("Rubik", 30), text_color="#242424").grid(row=0, column=12)
 
 
 def color_chooser(button):
@@ -813,12 +819,12 @@ def color_chooser(button):
     elif button == "lm":
         move_preview = move_preview if color_hex is None else color_hex
 
-    player1_button.configure(text_color=player1)
-    player2_button.configure(text_color=player2)
-    light_square_button.configure(text_color=light_square)
-    dark_square_button.configure(text_color=dark_square)
-    selected_piece_button.configure(text_color=selected_piece)
-    legal_moves_button.configure(text_color=move_preview)
+    playerOne.configure(text_color=player1)
+    playerTwo.configure(text_color=player2)
+    lightSquare.configure(text_color=light_square)
+    darkSquare.configure(text_color=dark_square)
+    selectedPiece.configure(text_color=selected_piece)
+    movePreview.configure(text_color=move_preview)
 
     # changes hover_color and allows changing piece colors in real-time
     for r in range(8):
@@ -835,80 +841,80 @@ def color_chooser(button):
 
 def puzzle_mode():
     play()
-    enable_all_buttons()
+    enable_all()
     chess_pattern()
 
     # displays piece selection bar
-    if pawn_button.cget("state") == "disabled":
-        play_button.configure(text="PLAY ▶")
-        pawn_button.configure(state="normal", hover_color="#343434", fg_color="#242424", command=lambda piece="♟": piece_selector(piece))
-        king_button.configure(state="normal", hover_color="#343434", fg_color="#242424", command=lambda piece="♚": piece_selector(piece))
-        queen_button.configure(state="normal", hover_color="#343434", fg_color="#242424", command=lambda piece="♛": piece_selector(piece))
-        rook_button.configure(state="normal", hover_color="#343434", fg_color="#242424", command=lambda piece="♜": piece_selector(piece))
-        knight_button.configure(state="normal", hover_color="#343434", fg_color="#242424", command=lambda piece="♞": piece_selector(piece))
-        bishop_button.configure(state="normal", hover_color="#343434", fg_color="#242424", command=lambda piece="♝": piece_selector(piece))
-        color_button.configure(state="normal", hover_color="#343434", fg_color="#242424", command=color_selector)
-        clear_all.configure(state="normal", hover_color="#343434", fg_color="#242424", command=lambda piece="": piece_selector(piece))
+    if pawnPiece.cget("state") == "disabled":
+        playGame.configure(text="PLAY ▶")
+        pawnPiece.configure(state="normal", hover_color="#343434", fg_color="#242424", command=lambda piece="♟": selector(piece))
+        kingPiece.configure(state="normal", hover_color="#343434", fg_color="#242424", command=lambda piece="♚": selector(piece))
+        queenPiece.configure(state="normal", hover_color="#343434", fg_color="#242424", command=lambda piece="♛": selector(piece))
+        rookPiece.configure(state="normal", hover_color="#343434", fg_color="#242424", command=lambda piece="♜": selector(piece))
+        knightPiece.configure(state="normal", hover_color="#343434", fg_color="#242424", command=lambda piece="♞": selector(piece))
+        bishopPiece.configure(state="normal", hover_color="#343434", fg_color="#242424", command=lambda piece="♝": selector(piece))
+        selectedColor.configure(state="normal", hover_color="#343434", fg_color="#242424", command=color_selection)
+        clearBoard.configure(state="normal", hover_color="#343434", fg_color="#242424", command=lambda piece="": selector(piece))
 
         # enables placing pieces on the board
         for r in range(8):
             for c in range(8):
-                board[r][c].configure(command=lambda row=r, column=c: piece_placer(row, column))
+                board[r][c].configure(command=lambda row=r, column=c: placer(row, column))
 
     # hide piece selection bar
     else:
-        play_button.configure(text="RESET ↺")
-        pawn_button.configure(state="disabled", hover_color="#011f14")
-        king_button.configure(state="disabled", hover_color="#011f14")
-        queen_button.configure(state="disabled", hover_color="#011f14", command=lambda piece="♛": promote(piece))
-        rook_button.configure(state="disabled", hover_color="#011f14", command=lambda piece="♜": promote(piece))
-        knight_button.configure(state="disabled", hover_color="#011f14", command=lambda piece="♞": promote(piece))
-        bishop_button.configure(state="disabled", hover_color="#011f14", command=lambda piece="♝": promote(piece))
-        color_button.configure(state="disabled", hover_color="#011f14")
-        clear_all.configure(state="disabled", hover_color="#011f14")
+        playGame.configure(text="RESET ↺")
+        pawnPiece.configure(state="disabled", hover_color="#011f14")
+        kingPiece.configure(state="disabled", hover_color="#011f14")
+        queenPiece.configure(state="disabled", hover_color="#011f14", command=lambda piece="♛": promote(piece))
+        rookPiece.configure(state="disabled", hover_color="#011f14", command=lambda piece="♜": promote(piece))
+        knightPiece.configure(state="disabled", hover_color="#011f14", command=lambda piece="♞": promote(piece))
+        bishopPiece.configure(state="disabled", hover_color="#011f14", command=lambda piece="♝": promote(piece))
+        selectedColor.configure(state="disabled", hover_color="#011f14")
+        clearBoard.configure(state="disabled", hover_color="#011f14")
 
         # disables puzzle mode
         for r in range(8):
             for c in range(8):
-                board[r][c].configure(command=lambda row=r, column=c: pressed(row, column))
+                board[r][c].configure(command=lambda row=r, column=c: button_press(row, column))
 
 
-def piece_selector(piece):
+def selector(piece):
     global puzzle_piece
     # saves piece from piece selection bar to place on the board
     puzzle_piece = piece
 
 
-def color_selector():
+def color_selection():
     # switches colors of the pieces in the piece selection bar
-    if color_button.cget("text_color") == player1:
-        color_button.configure(text_color=player2)
-        pawn_button.configure(text_color=player2)
-        king_button.configure(text_color=player2)
-        queen_button.configure(text_color=player2)
-        rook_button.configure(text_color=player2)
-        knight_button.configure(text_color=player2)
-        bishop_button.configure(text_color=player2)
-        color_button.configure(text_color=player2)
-        clear_all.configure(state="normal", hover_color="#343434", command=lambda piece="": piece_selector(piece))
-    elif color_button.cget("text_color") == player2:
-        color_button.configure(text_color=player1)
-        color_button.configure(text_color=player1)
-        pawn_button.configure(text_color=player1)
-        king_button.configure(text_color=player1)
-        queen_button.configure(text_color=player1)
-        rook_button.configure(text_color=player1)
-        knight_button.configure(text_color=player1)
-        bishop_button.configure(text_color=player1)
-        color_button.configure(text_color=player1)
+    if selectedColor.cget("text_color") == player1:
+        selectedColor.configure(text_color=player2)
+        pawnPiece.configure(text_color=player2)
+        kingPiece.configure(text_color=player2)
+        queenPiece.configure(text_color=player2)
+        rookPiece.configure(text_color=player2)
+        knightPiece.configure(text_color=player2)
+        bishopPiece.configure(text_color=player2)
+        selectedColor.configure(text_color=player2)
+        clearBoard.configure(state="normal", hover_color="#343434", command=lambda piece="": selector(piece))
+    elif selectedColor.cget("text_color") == player2:
+        selectedColor.configure(text_color=player1)
+        selectedColor.configure(text_color=player1)
+        pawnPiece.configure(text_color=player1)
+        kingPiece.configure(text_color=player1)
+        queenPiece.configure(text_color=player1)
+        rookPiece.configure(text_color=player1)
+        knightPiece.configure(text_color=player1)
+        bishopPiece.configure(text_color=player1)
+        selectedColor.configure(text_color=player1)
 
 
-def piece_placer(row, column):
+def placer(row, column):
     global puzzle_piece
     # places pieces on the board during puzzle mode
 
     # places piece with its color on the piece selection bar on the board
-    if color_button.cget("text_color") == player1 and puzzle_piece != "":
+    if selectedColor.cget("text_color") == player1 and puzzle_piece != "":
         board[row][column].configure(text=puzzle_piece, text_color=player1, text_color_disabled=player1)
 
         # if same king was already placed, delete old one as there can only be one king of each color
@@ -919,7 +925,7 @@ def piece_placer(row, column):
                     board[row][column].configure(text=puzzle_piece, text_color=player1, text_color_disabled=player1)
 
     # places piece with its color on the piece selection bar on the board
-    elif color_button.cget("text_color") == player2 and puzzle_piece != "":
+    elif selectedColor.cget("text_color") == player2 and puzzle_piece != "":
         board[row][column].configure(text=puzzle_piece, text_color=player2, text_color_disabled=player2)
 
         # if same king was already placed, delete old one as there can only be one king of each color
@@ -933,7 +939,7 @@ def piece_placer(row, column):
         board[row][column].configure(text=puzzle_piece, text_color="blue", text_color_disabled="blue")
 
 
-def clear_all_pieces(self):
+def clear_all(self):
     # clears all pieces on the board
     for r in range(8):
         for c in range(8):
@@ -950,51 +956,63 @@ app.geometry("800x920+552+80")
 # PROMOTION MENU BAR #
 
 
-top_menu_bar = ctk.CTkFrame(app,
-                            width=700,
-                            height=100,
-                            fg_color="#242424")
-top_menu_bar.pack(pady=20)
+topFrame = ctk.CTkFrame(app,
+                        width=700,
+                        height=100,
+                        fg_color="#242424")
+topFrame.pack(pady=20)
 
-pawn_button = ctk.CTkButton(top_menu_bar,
-                            text="♟",
-                            text_color_disabled="#242424",
-                            font=("Rubik", 40),
-                            width=60,
-                            height=60,
-                            corner_radius=10,
-                            fg_color="#242424",
-                            hover_color="#011f14",
-                            state="disabled")
-pawn_button.grid(row=0, column=0, padx=10)
+pawnPiece = ctk.CTkButton(topFrame,
+                          text="♟",
+                          text_color_disabled="#242424",
+                          font=("Rubik", 40),
+                          width=60,
+                          height=60,
+                          corner_radius=10,
+                          fg_color="#242424",
+                          hover_color="#011f14",
+                          state="disabled")
+pawnPiece.grid(row=0, column=0, padx=10)
 
-king_button = ctk.CTkButton(top_menu_bar,
-                            text="♚",
-                            text_color=player1,
-                            text_color_disabled="#242424",
-                            font=("Rubik", 40),
-                            width=60,
-                            height=60,
-                            corner_radius=10,
-                            fg_color="#242424",
-                            hover_color="#011f14",
-                            state="disabled")
-king_button.grid(row=0, column=1, padx=10)
+kingPiece = ctk.CTkButton(topFrame,
+                          text="♚",
+                          text_color=player1,
+                          text_color_disabled="#242424",
+                          font=("Rubik", 40),
+                          width=60,
+                          height=60,
+                          corner_radius=10,
+                          fg_color="#242424",
+                          hover_color="#011f14",
+                          state="disabled")
+kingPiece.grid(row=0, column=1, padx=10)
 
-queen_button = ctk.CTkButton(top_menu_bar,
-                             text="♛",
-                             font=("Rubik", 40),
-                             width=60,
-                             height=60,
-                             corner_radius=10,
-                             fg_color="#242424",
-                             hover_color="#011f14",
-                             state="disabled",
-                             command=lambda piece="♛": promote(piece))
-queen_button.grid(row=0, column=2, padx=10)
+queenPiece = ctk.CTkButton(topFrame,
+                           text="♛",
+                           font=("Rubik", 40),
+                           width=60,
+                           height=60,
+                           corner_radius=10,
+                           fg_color="#242424",
+                           hover_color="#011f14",
+                           state="disabled",
+                           command=lambda piece="♛": promote(piece))
+queenPiece.grid(row=0, column=2, padx=10)
 
-rook_button = ctk.CTkButton(top_menu_bar,
-                            text="♜",
+rookPiece = ctk.CTkButton(topFrame,
+                          text="♜",
+                          font=("Rubik", 40),
+                          width=60,
+                          height=60,
+                          corner_radius=10,
+                          fg_color="#242424",
+                          hover_color="#011f14",
+                          state="disabled",
+                          command=lambda piece="♜": promote(piece))
+rookPiece.grid(row=0, column=3, padx=10)
+
+knightPiece = ctk.CTkButton(topFrame,
+                            text="♞",
                             font=("Rubik", 40),
                             width=60,
                             height=60,
@@ -1002,59 +1020,47 @@ rook_button = ctk.CTkButton(top_menu_bar,
                             fg_color="#242424",
                             hover_color="#011f14",
                             state="disabled",
-                            command=lambda piece="♜": promote(piece))
-rook_button.grid(row=0, column=3, padx=10)
+                            command=lambda piece="♞": promote(piece))
+knightPiece.grid(row=0, column=4, padx=10)
 
-knight_button = ctk.CTkButton(top_menu_bar,
-                              text="♞",
-                              font=("Rubik", 40),
+bishopPiece = ctk.CTkButton(topFrame,
+                            text="♝",
+                            font=("Rubik", 40),
+                            width=60,
+                            height=60,
+                            corner_radius=10,
+                            fg_color="#242424",
+                            hover_color="#011f14",
+                            state="disabled",
+                            command=lambda piece="♝": promote(piece))
+bishopPiece.grid(row=0, column=5, padx=10)
+
+selectedColor = ctk.CTkButton(topFrame,
+                              text="◐",
+                              text_color=player1,
+                              text_color_disabled="#242424",
+                              font=("Rubik", 40, "bold"),
                               width=60,
                               height=60,
                               corner_radius=10,
                               fg_color="#242424",
                               hover_color="#011f14",
-                              state="disabled",
-                              command=lambda piece="♞": promote(piece))
-knight_button.grid(row=0, column=4, padx=10)
+                              state="disabled")
+selectedColor.grid(row=0, column=6, padx=10)
 
-bishop_button = ctk.CTkButton(top_menu_bar,
-                              text="♝",
-                              font=("Rubik", 40),
-                              width=60,
-                              height=60,
-                              corner_radius=10,
-                              fg_color="#242424",
-                              hover_color="#011f14",
-                              state="disabled",
-                              command=lambda piece="♝": promote(piece))
-bishop_button.grid(row=0, column=5, padx=10)
+clearBoard = ctk.CTkButton(topFrame,
+                           text="🗑",
+                           text_color_disabled="#242424",
+                           font=("Rubik", 30),
+                           width=60,
+                           height=60,
+                           corner_radius=10,
+                           fg_color="#242424",
+                           hover_color="#011f14",
+                           state="disabled")
+clearBoard.grid(row=0, column=7, padx=10)
 
-color_button = ctk.CTkButton(top_menu_bar,
-                             text="◐",
-                             text_color=player1,
-                             text_color_disabled="#242424",
-                             font=("Rubik", 40, "bold"),
-                             width=60,
-                             height=60,
-                             corner_radius=10,
-                             fg_color="#242424",
-                             hover_color="#011f14",
-                             state="disabled")
-color_button.grid(row=0, column=6, padx=10)
-
-clear_all = ctk.CTkButton(top_menu_bar,
-                          text="🗑",
-                          text_color_disabled="#242424",
-                          font=("Rubik", 30),
-                          width=60,
-                          height=60,
-                          corner_radius=10,
-                          fg_color="#242424",
-                          hover_color="#011f14",
-                          state="disabled")
-clear_all.grid(row=0, column=7, padx=10)
-
-clear_all.bind("<Double-Button-1>", clear_all_pieces)
+clearBoard.bind("<Double-Button-1>", clear_all)
 
 
 # BOARD SETUP #
@@ -1069,12 +1075,12 @@ board = [[1, 2, 3, 4, 5, 6, 7, 8],
          [1, 2, 3, 4, 5, 6, 7, 8],
          [1, 2, 3, 4, 5, 6, 7, 8]]
 
-board_frame = ctk.CTkFrame(app, width=700, height=700)
-board_frame.pack()
+gameBoard = ctk.CTkFrame(app, width=700, height=700)
+gameBoard.pack()
 
 for kr in range(8):
     for kc in range(8):
-        board[kr][kc] = ctk.CTkButton(board_frame,
+        board[kr][kc] = ctk.CTkButton(gameBoard,
                                       text="",
                                       font=("Times New Roman", 64),
                                       text_color="blue",
@@ -1086,151 +1092,151 @@ for kr in range(8):
                                       border_width=0,
                                       border_color=move_preview,
                                       hover_color=selected_piece,
-                                      command=lambda row=kr, column=kc: pressed(row, column))
+                                      command=lambda row=kr, column=kc: button_press(row, column))
         board[kr][kc].grid(row=kr, column=kc)
 
 chess_pattern()
-disable_all_buttons()
+disable_all()
 
 
 # MENU BAR #
 
 
-bot_menu_bar = ctk.CTkFrame(app,
-                            width=400,
-                            height=100,
-                            fg_color="#242424")
-bot_menu_bar.pack(pady=20)
+botFrame = ctk.CTkFrame(app,
+                        width=400,
+                        height=100,
+                        fg_color="#242424")
+botFrame.pack(pady=20)
 
-play_button = ctk.CTkButton(bot_menu_bar,
-                            text="PLAY ▶",
-                            font=("Rubik", 22, "bold"),
-                            command=play,
+playGame = ctk.CTkButton(botFrame,
+                         text="PLAY ▶",
+                         font=("Rubik", 22, "bold"),
+                         command=play,
+                         fg_color="#242424",
+                         hover_color="#343434",
+                         width=180,
+                         height=60)
+playGame.grid(row=0, column=0)
+
+settingsMenu = ctk.CTkButton(botFrame,
+                             text="⚙",
+                             font=("Rubik", 22),
+                             command=settings,
+                             fg_color="#242424",
+                             hover_color="#343434",
+                             width=60,
+                             height=60)
+settingsMenu.grid(row=0, column=1)
+
+puzzleMode = ctk.CTkButton(botFrame,
+                           text="🛠",
+                           font=("Rubik", 25),
+                           text_color_disabled="#242424",
+                           width=60,
+                           height=60,
+                           fg_color="#242424",
+                           hover_color="#343434",
+                           command=puzzle_mode,
+                           state="disabled")
+puzzleMode.grid(row=0, column=2)
+
+placeHolder = ctk.CTkLabel(botFrame, text="|", font=("Rubik", 30), text_color="#242424").grid(row=0, column=3)
+
+playerOne = ctk.CTkButton(botFrame,
+                          text="♟",
+                          text_color=player1,
+                          text_color_disabled="#242424",
+                          font=("Rubik", 22),
+                          command=lambda b="p1": color_chooser(b),
+                          fg_color="#242424",
+                          hover_color="#343434",
+                          width=60,
+                          height=60,
+                          state="disabled")
+playerOne.grid(row=0, column=4)
+
+playerTwo = ctk.CTkButton(botFrame,
+                          text="♟︎",
+                          text_color=player2,
+                          text_color_disabled="#242424",
+                          font=("Rubik", 22),
+                          command=lambda b="p2": color_chooser(b),
+                          fg_color="#242424",
+                          hover_color="#343434",
+                          width=60,
+                          height=60,
+                          state="disabled")
+playerTwo.grid(row=0, column=5)
+
+placeHolder2 = ctk.CTkLabel(botFrame, text="|", font=("Rubik", 30), text_color="#242424").grid(row=0, column=6)
+
+lightSquare = ctk.CTkButton(botFrame,
+                            text="■",
+                            text_color=light_square,
+                            text_color_disabled="#242424",
+                            font=("Rubik", 35),
+                            command=lambda b="ls": color_chooser(b),
                             fg_color="#242424",
                             hover_color="#343434",
-                            width=180,
-                            height=60)
-play_button.grid(row=0, column=0)
+                            width=60,
+                            height=60,
+                            state="disabled")
+lightSquare.grid(row=0, column=7)
 
-settings_button = ctk.CTkButton(bot_menu_bar,
-                                text="⚙",
-                                font=("Rubik", 22),
-                                command=settings,
-                                fg_color="#242424",
-                                hover_color="#343434",
-                                width=60,
-                                height=60)
-settings_button.grid(row=0, column=1)
+darkSquare = ctk.CTkButton(botFrame,
+                           text="■",
+                           text_color=dark_square,
+                           text_color_disabled="#242424",
+                           font=("Rubik", 35),
+                           command=lambda b="ds": color_chooser(b),
+                           fg_color="#242424",
+                           hover_color="#343434",
+                           width=60,
+                           height=60,
+                           state="disabled")
+darkSquare.grid(row=0, column=8)
 
-builder_button = ctk.CTkButton(bot_menu_bar,
-                               text="🛠",
-                               font=("Rubik", 25),
-                               text_color_disabled="#242424",
-                               width=60,
-                               height=60,
-                               fg_color="#242424",
-                               hover_color="#343434",
-                               command=puzzle_mode,
-                               state="disabled")
-builder_button.grid(row=0, column=2)
+placeHolder3 = ctk.CTkLabel(botFrame, text="|", font=("Rubik", 30), text_color="#242424").grid(row=0, column=9)
 
-place_holder = ctk.CTkLabel(bot_menu_bar, text="|", font=("Rubik", 30), text_color="#242424").grid(row=0, column=3)
+selectedPiece = ctk.CTkButton(botFrame,
+                              text="■",
+                              text_color="#664D39",
+                              text_color_disabled="#242424",
+                              font=("Rubik", 35),
+                              command=lambda b="sp": color_chooser(b),
+                              fg_color="#242424",
+                              hover_color="#343434",
+                              width=60,
+                              height=60,
+                              state="disabled")
+selectedPiece.grid(row=0, column=10)
 
-player1_button = ctk.CTkButton(bot_menu_bar,
-                               text="♟",
-                               text_color=player1,
-                               text_color_disabled="#242424",
-                               font=("Rubik", 22),
-                               command=lambda b="p1": color_chooser(b),
-                               fg_color="#242424",
-                               hover_color="#343434",
-                               width=60,
-                               height=60,
-                               state="disabled")
-player1_button.grid(row=0, column=4)
+movePreview = ctk.CTkButton(botFrame,
+                            text="■",
+                            text_color="#725640",
+                            text_color_disabled="#242424",
+                            font=("Rubik", 35),
+                            command=lambda b="lm": color_chooser(b),
+                            fg_color="#242424",
+                            hover_color="#343434",
+                            width=60,
+                            height=60,
+                            state="disabled")
+movePreview.grid(row=0, column=11)
 
-player2_button = ctk.CTkButton(bot_menu_bar,
-                               text="♟︎",
-                               text_color=player2,
-                               text_color_disabled="#242424",
-                               font=("Rubik", 22),
-                               command=lambda b="p2": color_chooser(b),
-                               fg_color="#242424",
-                               hover_color="#343434",
-                               width=60,
-                               height=60,
-                               state="disabled")
-player2_button.grid(row=0, column=5)
+placeHolder4 = ctk.CTkLabel(botFrame, text="|", font=("Rubik", 30), text_color="#242424").grid(row=0, column=12)
 
-place_holder2 = ctk.CTkLabel(bot_menu_bar, text="|", font=("Rubik", 30), text_color="#242424").grid(row=0, column=6)
-
-light_square_button = ctk.CTkButton(bot_menu_bar,
-                                    text="■",
-                                    text_color=light_square,
-                                    text_color_disabled="#242424",
-                                    font=("Rubik", 35),
-                                    command=lambda b="ls": color_chooser(b),
-                                    fg_color="#242424",
-                                    hover_color="#343434",
-                                    width=60,
-                                    height=60,
-                                    state="disabled")
-light_square_button.grid(row=0, column=7)
-
-dark_square_button = ctk.CTkButton(bot_menu_bar,
-                                   text="■",
-                                   text_color=dark_square,
-                                   text_color_disabled="#242424",
-                                   font=("Rubik", 35),
-                                   command=lambda b="ds": color_chooser(b),
-                                   fg_color="#242424",
-                                   hover_color="#343434",
-                                   width=60,
-                                   height=60,
-                                   state="disabled")
-dark_square_button.grid(row=0, column=8)
-
-place_holder3 = ctk.CTkLabel(bot_menu_bar, text="|", font=("Rubik", 30), text_color="#242424").grid(row=0, column=9)
-
-selected_piece_button = ctk.CTkButton(bot_menu_bar,
-                                      text="■",
-                                      text_color="#664D39",
-                                      text_color_disabled="#242424",
-                                      font=("Rubik", 35),
-                                      command=lambda b="sp": color_chooser(b),
-                                      fg_color="#242424",
-                                      hover_color="#343434",
-                                      width=60,
-                                      height=60,
-                                      state="disabled")
-selected_piece_button.grid(row=0, column=10)
-
-legal_moves_button = ctk.CTkButton(bot_menu_bar,
-                                   text="■",
-                                   text_color="#725640",
-                                   text_color_disabled="#242424",
-                                   font=("Rubik", 35),
-                                   command=lambda b="lm": color_chooser(b),
-                                   fg_color="#242424",
-                                   hover_color="#343434",
-                                   width=60,
-                                   height=60,
-                                   state="disabled")
-legal_moves_button.grid(row=0, column=11)
-
-place_holder4 = ctk.CTkLabel(bot_menu_bar, text="|", font=("Rubik", 30), text_color="#242424").grid(row=0, column=12)
-
-color_reset_button = ctk.CTkButton(bot_menu_bar,
-                                   text="↺",
-                                   text_color="#725640",
-                                   text_color_disabled="#242424",
-                                   font=("Rubik", 30),
-                                   command=lambda b="rr": color_chooser(b),
-                                   fg_color="#242424",
-                                   hover_color="#343434",
-                                   width=60,
-                                   height=60,
-                                   state="disabled")
-color_reset_button.grid(row=0, column=13)
+colorReset = ctk.CTkButton(botFrame,
+                           text="↺",
+                           text_color="#725640",
+                           text_color_disabled="#242424",
+                           font=("Rubik", 30),
+                           command=lambda b="rr": color_chooser(b),
+                           fg_color="#242424",
+                           hover_color="#343434",
+                           width=60,
+                           height=60,
+                           state="disabled")
+colorReset.grid(row=0, column=13)
 
 app.mainloop()
