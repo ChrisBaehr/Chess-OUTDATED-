@@ -1114,7 +1114,7 @@ playGame = ctk.CTkButton(botFrame,
                          command=play,
                          fg_color="#242424",
                          hover_color="#343434",
-                         width=180,
+                         width=140,
                          height=60)
 playGame.grid(row=0, column=0)
 
