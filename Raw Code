@@ -255,14 +255,14 @@ class King(Piece):
 
         # enable castling if: involved pieces have not been moved yet, have no pieces in between & are not under attack
         if castle.count([row, column]) and castle.count([row, 6]):
-            if free(row, column + 1) and not visible(row, column + 1, enemy_color, row, column) \
-                    and free(row, column + 2) and not visible(row, column + 2, enemy_color, row, column):
+            if free(row, column + 1) and not visible_to(row, column + 1, enemy_color, row, column) \
+                    and free(row, column + 2) and not visible_to(row, column + 2, enemy_color, row, column):
                 allow(row, column + 2)
 
         # enable castling if: involved pieces have not been moved yet, have no pieces in between & are not under attack
         if castle.count([row, column]) and castle.count([row, 2]):
-            if free(row, column - 1) and not visible(row, column - 1, enemy_color, row, column) \
-                and free(row, column - 2) and not visible(row, column - 2, enemy_color, row, column) \
+            if free(row, column - 1) and not visible_to(row, column - 1, enemy_color, row, column) \
+                and free(row, column - 2) and not visible_to(row, column - 2, enemy_color, row, column) \
                     and free(row, column - 3):
                 allow(row, column - 2)
 
@@ -273,8 +273,8 @@ class King(Piece):
 
             if 0 <= r <= 7 and 0 <= c <= 7:   # if destination is on the board
                 # enable move & try next square if: is free, would not result in check & kings would not be side by side
-                if not king_spacer(r, c) and not visible(r, c, enemy_color, r, c) and free(r, c) \
-                        or not king_spacer(r, c) and not visible(r, c, enemy_color, r, c) and capture(r, c, enemy_color):
+                if not king_spacer(r, c) and not visible_to(r, c, enemy_color, row, column) and free(r, c) \
+                        or not king_spacer(r, c) and not visible_to(r, c, enemy_color, row, column) and capture(r, c, enemy_color):
                     allow(r, c)
 
 
@@ -415,7 +415,7 @@ def castling_history():
         castle.remove([7, 6])
 
 
-def king_movement(row, column, color_enemy):
+def king_legal_moves(row, column, color_enemy):
     # returns True if the king has legal moves
     directions = [[-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1]]
 
@@ -425,8 +425,8 @@ def king_movement(row, column, color_enemy):
 
         if 0 <= r <= 7 and 0 <= c <= 7:
             # king has at least 1 square he can safely move to
-            if not king_spacer(r, c) and not visible(r, c, color_enemy, r, c) and free(r, c) \
-                    or not king_spacer(r, c) and not visible(r, c, color_enemy, r, c) and capture(r, c, color_enemy):
+            if not king_spacer(r, c) and not visible_to(r, c, color_enemy, row, column) and free(r, c) \
+                    or not king_spacer(r, c) and not visible_to(r, c, color_enemy, row, column) and capture(r, c, color_enemy):
                 return True
 
 
@@ -441,10 +441,10 @@ def king_spacer(row, column):
 
         if 0 <= r <= 7 and 0 <= c <= 7:
             # returns True if square is surrounded by two kings
+            if board[r][c].cget("text") == "♚":
+                king_count += 1
             if king_count == 2:
                 return True
-            elif board[r][c].cget("text") == "♚":
-                king_count += 1
 
 
 def promote(piece):
@@ -491,40 +491,40 @@ def check():
                 black_king = [a, b]
 
     # if white is in check, change fg_color of white king to red
-    if visible(white_king[0], white_king[1], player2, white_king[0], white_king[1]):
+    if visible_to(white_king[0], white_king[1], player2, white_king[0], white_king[1]):
         board[white_king[0]][white_king[1]].configure(fg_color="#8B0000")
         king_color_atk = player1
 
         # if king is attacked by multiple pieces and is not able to move to safety -> checkmate
-        if len(attacking_piece) >= 2 and not king_movement(white_king[0], white_king[1], player2):
+        if len(attacking_piece) >= 2 and not king_legal_moves(white_king[0], white_king[1], player2):
             board[white_king[0]][white_king[1]].configure(fg_color="#8B0000")
             board[black_king[0]][black_king[1]].configure(fg_color="#023020")
             disable_all()
 
         # if attack cannot be blocked, the attacker cannot be captured and the king has no legal moves -> checkmate
         elif not check_block(white_king[0], white_king[1], player1) \
-                and not visible(atk_piece[0][0], atk_piece[0][1], player1, atk_piece[0][0], atk_piece[0][1]) \
-                and not king_movement(white_king[0], white_king[1], player2):
+                and not visible_to(atk_piece[0][0], atk_piece[0][1], player1, atk_piece[0][0], atk_piece[0][1]) \
+                and not king_legal_moves(white_king[0], white_king[1], player2):
             board[white_king[0]][white_king[1]].configure(fg_color="#8B0000")
             board[black_king[0]][black_king[1]].configure(fg_color="#023020")
             disable_all()
         return True
 
     # if black is in check, change fg_color of black king to red
-    elif visible(black_king[0], black_king[1], player1, black_king[0], black_king[1]):
+    elif visible_to(black_king[0], black_king[1], player1, black_king[0], black_king[1]):
         board[black_king[0]][black_king[1]].configure(fg_color="#8B0000")
         king_color_atk = player2
 
         # if king is attacked by multiple pieces and is not able to move to safety -> checkmate
-        if len(attacking_piece) >= 2 and not king_movement(black_king[0], black_king[1], player1):
+        if len(attacking_piece) >= 2 and not king_legal_moves(black_king[0], black_king[1], player1):
             board[black_king[0]][black_king[1]].configure(fg_color="#8B0000")
             board[white_king[0]][white_king[1]].configure(fg_color="#023020")
             disable_all()
 
         # if attack cannot be blocked, the attacker cannot be captured and the king has no legal moves -> checkmate
         elif not check_block(black_king[0], black_king[1], player2) \
-                and not visible(atk_piece[0][0], atk_piece[0][1], player2, atk_piece[0][0], atk_piece[0][1]) \
-                and not king_movement(black_king[0], black_king[1], player1):
+                and not visible_to(atk_piece[0][0], atk_piece[0][1], player2, atk_piece[0][0], atk_piece[0][1]) \
+                and not king_legal_moves(black_king[0], black_king[1], player1):
             board[black_king[0]][black_king[1]].configure(fg_color="#8B0000")
             board[white_king[0]][white_king[1]].configure(fg_color="#023020")
             disable_all()
@@ -555,7 +555,7 @@ def check_block(king_r, king_c, blocking_color):
 
         if 0 <= r <= 7 and 0 <= c <= 7:
             # if position can be seen by own piece -> attack can be blocked
-            if board[r][c].cget("text") == "" and visible(r, c, blocking_color, r, c):
+            if board[r][c].cget("text") == "" and visible_to(r, c, blocking_color, r, c):
                 # attacks can only be blocked if the blocking piece is in between king and attacker
                 if loc != king_loc and not atk_piece.count(loc):
                     return True
@@ -571,7 +571,7 @@ def check_block(king_r, king_c, blocking_color):
                   [2, -1], [1, -2], [-1, -2], [1, 2], [-1, 2]]
 
 
-def visible(row, col, atk_color, orig_r, orig_c):
+def visible_to(row, col, atk_color, orig_r, orig_c):
     global dir_atk, atk_piece
     # return True if location can be seen by pieces with atk_color
 
