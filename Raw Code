@@ -2,6 +2,12 @@ import customtkinter as ctk
 from tkinter import colorchooser
 
 
+# STALEMATE
+# pinned pieces are still considered to be able to block even if they cannot and its checkmate
+# track all moves with notations: d4, d5, Nf6, etc...
+# paste move notations (d4, d5, Nf6, etc...) to get a scenario in puzzle builder
+
+
 # COLOR CUSTOMIZATION #
 
 
@@ -390,7 +396,10 @@ def capture(r, c, color_enemy):
 
 def allow(r, c):
     # enables button and changes fg_color to visualize the possible move
-    board[r][c].configure(state="normal", fg_color=move_preview, border_width=6, border_color=selected_piece)
+    board[r][c].configure(state="normal",
+                          fg_color=move_preview,
+                          border_width=6,
+                          border_color=selected_piece)
 
 
 def castling_history():
@@ -581,13 +590,15 @@ def visible(row, col, atk_color, orig_r, orig_c):
 
     # pawns can create checks and back up other pieces that attack the enemy king
     if 0 <= row + pawn_dir <= 7 and 0 <= col + 1 <= 7:
-        if board[row + pawn_dir][col + 1].cget("text") == "♟" and board[row + pawn_dir][col + 1].cget("text_color") == pawn_color:
+        if board[row + pawn_dir][col + 1].cget("text") == "♟" \
+                and board[row + pawn_dir][col + 1].cget("text_color") == pawn_color:
             atk_piece.append([row + pawn_dir, col + 1])
             return_true += 1
 
     # pawns can create checks and back up other pieces that attack the enemy king
     if 0 <= row + pawn_dir <= 7 and 0 <= col - 1 <= 7:
-        if board[row + pawn_dir][col - 1].cget("text") == "♟" and board[row + pawn_dir][col - 1].cget("text_color") == pawn_color:
+        if board[row + pawn_dir][col - 1].cget("text") == "♟" \
+                and board[row + pawn_dir][col - 1].cget("text_color") == pawn_color:
             atk_piece.append([row + pawn_dir, col - 1])
             return_true += 1
 
@@ -694,7 +705,7 @@ def play():
     global player1, player2, last_piece, last_loc, moves, castle, atk_piece
     # places all pieces to their starting position and resets all variables
 
-    playGame.configure(text="RESET ↺")
+    playGame.configure(text="RESET 🗘")
     pieces = ["♜", "♞", "♝", "♛", "♚", "♝", "♞", "♜"]
     castle = [[0, 2], [0, 4], [0, 6], [7, 2], [7, 4], [7, 6]]
     atk_piece = []
@@ -760,10 +771,27 @@ def settings():
         selectedPiece.configure(state="normal")
         movePreview.configure(state="normal")
         colorReset.configure(state="normal")
-        splitter = ctk.CTkLabel(botFrame, text="|", font=("Rubik", 30), text_color="#E5E5E5").grid(row=0, column=3)
-        splitter2 = ctk.CTkLabel(botFrame, text="|", font=("Rubik", 30), text_color="#E5E5E5").grid(row=0, column=6)
-        splitter3 = ctk.CTkLabel(botFrame, text="|", font=("Rubik", 30), text_color="#E5E5E5").grid(row=0, column=9)
-        splitter4 = ctk.CTkLabel(botFrame, text="|", font=("Rubik", 30), text_color="#E5E5E5").grid(row=0, column=12)
+        splitter = ctk.CTkLabel(botFrame,
+                                text="|",
+                                font=("Rubik", 30),
+                                text_color="#E5E5E5")
+        splitter.grid(row=0, column=3)
+        splitter2 = ctk.CTkLabel(botFrame,
+                                 text="|",
+                                 font=("Rubik", 30),
+                                 text_color="#E5E5E5")
+        splitter2.grid(row=0, column=6)
+        splitter3 = ctk.CTkLabel(botFrame,
+                                 text="|",
+                                 font=("Rubik", 30),
+                                 text_color="#E5E5E5")
+        splitter3.grid(row=0, column=9)
+        splitter4 = ctk.CTkLabel(botFrame,
+                                 text="|",
+                                 font=("Rubik", 30),
+                                 text_color="#E5E5E5")
+        splitter4.grid(row=0, column=12)
+
     # hides settings bar
     else:
         puzzleMode.configure(state="disabled")
@@ -774,10 +802,26 @@ def settings():
         selectedPiece.configure(state="disabled")
         movePreview.configure(state="disabled")
         colorReset.configure(state="disabled")
-        splitter = ctk.CTkLabel(botFrame, text="|", font=("Rubik", 30), text_color="#242424").grid(row=0, column=3)
-        splitter2 = ctk.CTkLabel(botFrame, text="|", font=("Rubik", 30), text_color="#242424").grid(row=0, column=6)
-        splitter3 = ctk.CTkLabel(botFrame, text="|", font=("Rubik", 30), text_color="#242424").grid(row=0, column=9)
-        splitter4 = ctk.CTkLabel(botFrame, text="|", font=("Rubik", 30), text_color="#242424").grid(row=0, column=12)
+        splitter = ctk.CTkLabel(botFrame,
+                                text="|",
+                                font=("Rubik", 30),
+                                text_color="#242424")
+        splitter.grid(row=0, column=3)
+        splitter2 = ctk.CTkLabel(botFrame,
+                                 text="|",
+                                 font=("Rubik", 30),
+                                 text_color="#242424")
+        splitter2.grid(row=0, column=6)
+        splitter3 = ctk.CTkLabel(botFrame,
+                                 text="|",
+                                 font=("Rubik", 30),
+                                 text_color="#242424")
+        splitter3.grid(row=0, column=9)
+        splitter4 = ctk.CTkLabel(botFrame,
+                                 text="|",
+                                 font=("Rubik", 30),
+                                 text_color="#242424")
+        splitter4.grid(row=0, column=12)
 
 
 def color_chooser(button):
@@ -841,14 +885,38 @@ def puzzle_mode():
     # displays piece selection bar
     if pawnPiece.cget("state") == "disabled":
         playGame.configure(text="PLAY ▶")
-        pawnPiece.configure(state="normal", hover_color="#343434", fg_color="#242424", command=lambda piece="♟": selector(piece))
-        kingPiece.configure(state="normal", hover_color="#343434", fg_color="#242424", command=lambda piece="♚": selector(piece))
-        queenPiece.configure(state="normal", hover_color="#343434", fg_color="#242424", command=lambda piece="♛": selector(piece))
-        rookPiece.configure(state="normal", hover_color="#343434", fg_color="#242424", command=lambda piece="♜": selector(piece))
-        knightPiece.configure(state="normal", hover_color="#343434", fg_color="#242424", command=lambda piece="♞": selector(piece))
-        bishopPiece.configure(state="normal", hover_color="#343434", fg_color="#242424", command=lambda piece="♝": selector(piece))
-        selectedColor.configure(state="normal", hover_color="#343434", fg_color="#242424", command=color_selection)
-        clearBoard.configure(state="normal", hover_color="#343434", fg_color="#242424", command=lambda piece="": selector(piece))
+        pawnPiece.configure(state="normal",
+                            hover_color="#343434",
+                            fg_color="#242424",
+                            command=lambda piece="♟": selector(piece))
+        kingPiece.configure(state="normal",
+                            hover_color="#343434",
+                            fg_color="#242424",
+                            command=lambda piece="♚": selector(piece))
+        queenPiece.configure(state="normal",
+                             hover_color="#343434",
+                             fg_color="#242424",
+                             command=lambda piece="♛": selector(piece))
+        rookPiece.configure(state="normal",
+                            hover_color="#343434",
+                            fg_color="#242424",
+                            command=lambda piece="♜": selector(piece))
+        knightPiece.configure(state="normal",
+                              hover_color="#343434",
+                              fg_color="#242424",
+                              command=lambda piece="♞": selector(piece))
+        bishopPiece.configure(state="normal",
+                              hover_color="#343434",
+                              fg_color="#242424",
+                              command=lambda piece="♝": selector(piece))
+        selectedColor.configure(state="normal",
+                                hover_color="#343434",
+                                fg_color="#242424",
+                                command=color_selection)
+        clearBoard.configure(state="normal",
+                             hover_color="#343434",
+                             fg_color="#242424",
+                             command=lambda piece="": selector(piece))
 
         # enables placing pieces on the board
         for r in range(8):
@@ -945,6 +1013,7 @@ def clear_all(self):
 
 app = ctk.CTk()
 app.geometry("800x920+552+80")
+app.title("~ Chess ~")
 
 
 # PROMOTION MENU BAR #
