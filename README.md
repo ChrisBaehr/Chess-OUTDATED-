@@ -26,7 +26,7 @@ As this literally is one of my first programming projects, don't expect overly f
 ⠀
 ### GUI Customization
 
-As far as customization is concerned, you can set a color for everything visible to you on the game board itself. Take a look at the Wiki page for more details.
+As far as customization is concerned, you can set a color for everything visible to you on the game board itself. Take a look at the [Wiki page](https://github.com/ChrisBaehr/Chess/wiki) for more details.
 
 ⠀
 ### Future Plans
