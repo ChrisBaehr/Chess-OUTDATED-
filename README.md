@@ -31,4 +31,4 @@ As far as customization is concerned, you can set a color for everything visible
 ⠀
 ### Future Plans
 
-Taking the elephant in the room aside, I plan to implement a sidebar with Chess notations showing the move history. While at it, being able to jump to a move in the past and look at the piece constellation then, would also be logical. Enabling dragging and dropping pieces as well as drawing arrows using the right mouse button are also part of my plans. Although still far ahead, playing against an AI is also an idea. Will probably have to use Stockfish with varying difficulty levels for that.
+Taking the elephant in the room aside, I plan to implement a sidebar with Chess notations showing the move history. While at it, being able to jump to a move in the past and look at the piece formation then, would also be logical. Adding piece drag and drop as well as drawing arrows using the right mouse button are also part of my plans. Although still far ahead, playing against an AI is also an idea. Will probably have to use Stockfish with varying difficulty levels for that.
