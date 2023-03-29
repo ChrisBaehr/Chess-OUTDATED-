@@ -17,7 +17,7 @@ move_preview = "#725640"
 
 
 last_piece = ""   # selected piece -> transfer piece to destination
-last_loc = ["", ""]   # coordinates of selected piece -> clear old position
+last_loc = []   # coordinates of selected piece -> clear old position
 moves = 0   # tracking move count -> switch turns
 color = player1 if moves % 2 == 0 else player2   # color of the player whose turn it is
 enemy_color = player1 if color == player2 else player2   # opposite of color
@@ -42,9 +42,9 @@ castle = [[0, 2], [0, 4], [0, 6], [7, 2], [7, 4], [7, 6]]   # potential castling
 # EN PASSANT #
 
 
-pot_en_passant = []   # coordinates of potential en passant -> confirm or deny en passant
+potential_enp = []   # coordinates of potential en passant -> confirm or deny en passant
 en_passant = []   # coordinates of confirmed en passant -> enable en passant move
-en_passant_dur = 0   # duration of en passant -> restricts en passant to the following move
+duration_enp = 0   # duration of en passant -> restricts en passant to the following move
 
 
 # PUZZLE BUILDER #
@@ -57,29 +57,27 @@ puzzle_piece = ""   # selected puzzle builder piece
 
 
 class Piece:
-    def __init__(self, row, column, name):
-        self.name = name
+    def __init__(self, row, column):
         self.row = row
         self.column = column
 
 
 class Pawn(Piece):
     def __init__(self, row, column):
-        self.row = row
-        self.column = column
+        super().__init__(row, column)
 
     def pawn_move(self, row, column):
-        global last_piece, last_loc, en_passant, pot_en_passant
+        global last_piece, last_loc, en_passant, potential_enp
         # pawn movement
 
         last_piece = "♟"
         last_loc = [row, column]
-        directions = [-1, -2] if color == player1 else [1, 2]   # pawn movement up or down depending on the color
-        start_pos = 6 if color == player1 else 1   # starting position -> move two squares the first time it is moved
+        directions = [-1, -2] if color == player1 else [1, 2]  # pawn movement up or down depending on the color
+        start_pos = 6 if color == player1 else 1  # starting position -> move two squares the first time it is moved
         toggle_buttons()
 
-        r1 = row+directions[0]   # row + 1 / - 1
-        r2 = row+directions[1]   # row + 2 / - 2
+        r1 = row + directions[0]  # row + 1 / - 1
+        r2 = row + directions[1]  # row + 2 / - 2
         c = column
 
         if free(r1, c):
@@ -92,22 +90,21 @@ class Pawn(Piece):
                 # if advancing two squares forward would allow for en passant: save as potential en passant
                 if c - 1 >= 0 and board[r2][c - 1].cget("text") == "♟" \
                         and board[r2][c - 1].cget("text_color") == enemy_color:
-                    pot_en_passant.append([r1, c])
+                    potential_enp.append([r1, c])
                 elif c + 1 <= 7 and board[r2][c + 1].cget("text") == "♟" \
                         and board[r2][c + 1].cget("text_color") == enemy_color:
-                    pot_en_passant.append([r1, c])
+                    potential_enp.append([r1, c])
 
         # allow pawn to capture enemy pieces
-        if column+1 <= 7 and capture(r1, c + 1, enemy_color) or en_passant.count([r1, c + 1]):
+        if column + 1 <= 7 and capture(r1, c + 1, enemy_color) or en_passant.count([r1, c + 1]):
             allow(r1, column + 1)
-        if column-1 >= 0 and capture(r1, c - 1, enemy_color) or en_passant.count([r1, c - 1]):
+        if column - 1 >= 0 and capture(r1, c - 1, enemy_color) or en_passant.count([r1, c - 1]):
             allow(r1, c - 1)
 
 
 class Knight(Piece):
     def __init__(self, row, column):
-        self.row = row
-        self.column = column
+        super().__init__(row, column)
 
     def knight_move(self, row, column):
         global last_piece, last_loc
@@ -120,7 +117,6 @@ class Knight(Piece):
         toggle_buttons()
 
         for d in range(len(directions)):
-
             r = row + directions[d][0]
             c = column + directions[d][1]
 
@@ -131,8 +127,7 @@ class Knight(Piece):
 
 class Rook(Piece):
     def __init__(self, row, column):
-        self.row = row
-        self.column = column
+        super().__init__(row, column)
 
     def rook_move(self, row, column):
         global last_piece, last_loc, enemy_color, player1, player2
@@ -168,8 +163,7 @@ class Rook(Piece):
 
 class Bishop(Piece):
     def __init__(self, row, column):
-        self.row = row
-        self.column = column
+        super().__init__(row, column)
 
     def bishop_move(self, row, column):
         global last_piece, last_loc, enemy_color, player1, player2
@@ -205,8 +199,7 @@ class Bishop(Piece):
 
 class Queen(Piece):
     def __init__(self, row, column):
-        self.row = row
-        self.column = column
+        super().__init__(row, column)
 
     def queen_move(self, row, column):
         global last_piece, last_loc, enemy_color, player1, player2
@@ -240,8 +233,7 @@ class Queen(Piece):
 
 class King(Piece):
     def __init__(self, row, column):
-        self.row = row
-        self.column = column
+        super().__init__(row, column)
 
     def king_move(self, row, column):
         global last_piece, last_loc, castle
@@ -273,8 +265,9 @@ class King(Piece):
 
             if 0 <= r <= 7 and 0 <= c <= 7:   # if destination is on the board
                 # enable move & try next square if: is free, would not result in check & kings would not be side by side
-                if not king_spacer(r, c) and not visible_to(r, c, enemy_color, row, column) and free(r, c) \
-                        or not king_spacer(r, c) and not visible_to(r, c, enemy_color, row, column) and capture(r, c, enemy_color):
+                if free(r, c) and not king_spacer(r, c) and not visible_to(r, c, enemy_color, row, column) \
+                        or capture(r, c, enemy_color) and not king_spacer(r, c) \
+                        and not visible_to(r, c, enemy_color, row, column):
                     allow(r, c)
 
 
@@ -282,22 +275,20 @@ class King(Piece):
 
 
 def button_press(row, column):
-    global moves, last_piece, color, enemy_color, last_loc, atk_piece, castle, en_passant, en_passant_dur, pot_en_passant
+    global moves, last_piece, color, enemy_color, last_loc, atk_piece, castle, en_passant, duration_enp, potential_enp
     # response to pressing a button on the game board
-
     color = player1 if moves % 2 == 0 else player2
     enemy_color = player1 if color == player2 else player2
     chess_pattern()   # clears move previews
     castling_history()   # tracks rook and king movement
 
     board[row][column].configure(fg_color=selected_piece)  # visualization of selected piece
-    piece = Piece(row, column, board[row][column].cget("text"))
+    Piece(row, column)
 
     # piece + color of selected piece in case an illegal move is attempted
     temp_piece = board[row][column].cget("text")
     temp_color = board[row][column].cget("text_color")
 
-    # if piece was selected and legal move
     if last_piece != "" and board[row][column].cget("text_color") != color:
         board[row][column].configure(text=last_piece, text_color=color, text_color_disabled=color)
 
@@ -316,18 +307,18 @@ def button_press(row, column):
 
             if en_passant.count([row, column]):   # remove pawn that was hit with en passant
                 board[row + direction][column].configure(text="", text_color="blue", text_color_disabled="blue")
-            elif pot_en_passant.count([row - 1, column]) and last_loc[1] == column:   # en passant confirmation
+            elif potential_enp.count([row - 1, column]) and last_loc[1] == column:   # en passant confirmation
                 en_passant.append([row - 1, column])
-                en_passant_dur = moves + 1
-            elif pot_en_passant.count([row + 1, column]) and last_loc[1] == column:   # en passant confirmation
+                duration_enp = moves + 1
+            elif potential_enp.count([row + 1, column]) and last_loc[1] == column:   # en passant confirmation
                 en_passant.append([row + 1, column])
-                en_passant_dur = moves + 1
+                duration_enp = moves + 1
 
-        # correctly visualizes piece movement and disables all buttons once the game has finished
+        # removes piece from last position and disables all buttons once the game has finished
         if row != last_loc[0] or column != last_loc[1]:  # if selected piece was moved
             board[last_loc[0]][last_loc[1]].configure(text="", text_color="blue", text_color_disabled="blue")
             atk_piece = []
-            en_passant = [] if en_passant_dur <= moves else en_passant
+            en_passant = [] if duration_enp <= moves else en_passant
 
             # resets move if it would result in own king check
             if check() and king_color_atk == color:
@@ -338,6 +329,14 @@ def button_press(row, column):
             elif check() and board[white_king[0]][white_king[1]].cget("fg_color") == "#023020" \
                     or check() and board[black_king[0]][black_king[1]].cget("fg_color") == "#023020":
                 disable_all()
+            elif color == player1 and not no_moves(player2) \
+                    and not king_legal_moves(black_king[0], black_king[1], player1):
+                stalemate()
+            elif color == player2 and not no_moves(player1) \
+                    and not king_legal_moves(white_king[0], white_king[1], player2):
+                stalemate()
+            elif forced_stalemate():
+                stalemate()
             else:
                 moves += 1
                 last_piece = ""
@@ -353,22 +352,22 @@ def button_press(row, column):
             knightPiece.configure(state="normal", fg_color="#023020", text_color=pawn_color)
             bishopPiece.configure(state="normal", fg_color="#023020", text_color=pawn_color)
 
-    elif piece.name == "♟":
+    elif board[row][column].cget("text") == "♟":
         pawn = Pawn(row, column)
         pawn.pawn_move(row, column)
-    elif piece.name == "♞":
+    elif board[row][column].cget("text") == "♞":
         knight = Knight(row, column)
         knight.knight_move(row, column)
-    elif piece.name == "♜":
+    elif board[row][column].cget("text") == "♜":
         rook = Rook(row, column)
         rook.rook_move(row, column)
-    elif piece.name == "♝":
+    elif board[row][column].cget("text") == "♝":
         bishop = Bishop(row, column)
         bishop.bishop_move(row, column)
-    elif piece.name == "♛":
-        queen = Queen( row, column)
+    elif board[row][column].cget("text") == "♛":
+        queen = Queen(row, column)
         queen.queen_move(row, column)
-    elif piece.name == "♚":
+    elif board[row][column].cget("text") == "♚":
         king = King(row, column)
         king.king_move(row, column)
 
@@ -425,8 +424,9 @@ def king_legal_moves(row, column, color_enemy):
 
         if 0 <= r <= 7 and 0 <= c <= 7:
             # king has at least 1 square he can safely move to
-            if not king_spacer(r, c) and not visible_to(r, c, color_enemy, row, column) and free(r, c) \
-                    or not king_spacer(r, c) and not visible_to(r, c, color_enemy, row, column) and capture(r, c, color_enemy):
+            if free(r, c) and not king_spacer(r, c) and not visible_to(r, c, color_enemy, row, column) \
+                    or capture(r, c, color_enemy) and not king_spacer(r, c) \
+                    and not visible_to(r, c, color_enemy, row, column):
                 return True
 
 
@@ -452,14 +452,10 @@ def promote(piece):
     # replaces pawn with the new piece
 
     for i in range(8):
-        if board[0][i].cget("text") == "♟":
+        if board[0][i].cget("text") == "♟" or board[7][i].cget("text") == "♟":
             board[0][i].configure(text=piece)
-            last_piece = piece
-            pawn_color = player1   # configures text_color of selection bar to fit the color of the pawn promoting
-        elif board[7][i].cget("text") == "♟":
             board[7][i].configure(text=piece)
             last_piece = piece
-            pawn_color = player2
 
     queenPiece.configure(state="disabled", fg_color="#242424")
     rookPiece.configure(state="disabled", fg_color="#242424")
@@ -467,6 +463,86 @@ def promote(piece):
     bishopPiece.configure(state="disabled", fg_color="#242424")
     toggle_buttons()
     check()
+
+
+# STALEMATE #
+
+
+def no_moves(o_color):
+    # returns True if opponent's pieces can move
+    e_color = player1 if o_color == player2 else player2
+    for r in range(8):
+        for c in range(8):
+            if board[r][c].cget("text") == "♟" and board[r][c].cget("text_color") == o_color:
+                if r-1 >= 0 and free(r-1, c) \
+                        or r-1 >= 0 and c-1 >= 0 and capture(r-1, c-1, e_color) \
+                        or r-1 >= 0 and c+1 <= 7 and capture(r-1, c+1, e_color):
+                    return True
+            if board[r][c].cget("text") == "♞" and board[r][c].cget("text_color") == o_color:
+                directions = [[-2, -1], [-2, 1], [2, 1], [2, -1], [1, -2], [-1, -2], [1, 2], [-1, 2]]
+
+                for d in range(len(directions)):
+                    row = r + directions[d][0]
+                    col = c + directions[d][1]
+                    if 0 <= row <= 7 and 0 <= col <= 7:
+                        if capture(row, col, e_color) or free(row, col):
+                            return True
+            elif board[r][c].cget("text") == "♝" and board[r][c].cget("text_color") == o_color:
+                directions = [[1, -1], [1, 1], [-1, 1], [-1, -1]]
+
+                for d in range(len(directions)):
+                    row = r + directions[d][0]
+                    col = c + directions[d][1]
+
+                    if 0 <= row <= 7 and 0 <= col <= 7:
+                        if free(row, col):
+                            return True
+                        elif capture(row, col, e_color):
+                            return True
+            elif board[r][c].cget("text") == "♜" and board[r][c].cget("text_color") == o_color:
+                directions = [[-1, 0], [0, 1], [1, 0], [0, -1]]
+
+                for d in range(len(directions)):
+                    row = r + directions[d][0]
+                    col = c + directions[d][1]
+
+                    if 0 <= row <= 7 and 0 <= col <= 7:
+                        if free(row, col):
+                            return True
+                        elif capture(row, col, e_color):
+                            return True
+            elif board[r][c].cget("text") == "♛" and board[r][c].cget("text_color") == o_color:
+                directions = [[-1, 0], [0, 1], [1, 0], [0, -1], [1, -1], [1, 1], [-1, 1], [-1, -1]]
+
+                for d in range(len(directions)):
+                    row = r + directions[d][0]
+                    col = c + directions[d][1]
+
+                    if 0 <= row <= 7 and 0 <= col <= 7:
+                        if free(row, col):
+                            return True
+                        elif capture(row, col, e_color):
+                            return True
+
+
+def forced_stalemate():
+    # returns True if checkmate cannot be achieved with the remaining pieces
+    pieces = 0
+    for r in range(8):
+        for c in range(8):
+            if board[r][c].cget("text") == "♝" or board[r][c].cget("text") == "♞":
+                pieces += 1
+            elif board[r][c].cget("text") != "" and board[r][c].cget("text") != "♚":
+                pieces += 2
+    if pieces <= 1:
+        return True
+
+
+def stalemate():
+    # changes fg_color of both kings and disables all buttons
+    board[black_king[0]][black_king[1]].configure(fg_color="#474747")
+    board[white_king[0]][white_king[1]].configure(fg_color="#474747")
+    disable_all()
 
 
 # CHECK #
@@ -556,7 +632,7 @@ def check_block(king_r, king_c, blocking_color):
         if 0 <= r <= 7 and 0 <= c <= 7:
             # if position can be seen by own piece -> attack can be blocked
             if board[r][c].cget("text") == "" and visible_to(r, c, blocking_color, r, c):
-                # attacks can only be blocked if the blocking piece is in between king and attacker
+                # attacks can only be blocked if the blocking piece is in between king and attacker and not pinned
                 if loc != king_loc and not atk_piece.count(loc):
                     return True
 
@@ -567,13 +643,11 @@ def check_block(king_r, king_c, blocking_color):
                 directions[dir_atk][e] -= 1   # if value <= -1 and is not a knight movement: decrement by 1
 
     dir_atk = 0
-    directions = [[-1, 0], [0, 1], [1, 0], [0, -1], [1, -1], [1, 1], [-1, 1], [-1, -1], [-2, -1], [-2, 1], [2, 1],
-                  [2, -1], [1, -2], [-1, -2], [1, 2], [-1, 2]]
 
 
 def visible_to(row, col, atk_color, orig_r, orig_c):
+    # returns True if location can be seen by pieces with atk_color
     global dir_atk, atk_piece
-    # return True if location can be seen by pieces with atk_color
 
     # directions from which the position could be seen
     directions = [[-1, 0], [0, 1], [1, 0], [0, -1], [1, -1], [1, 1], [-1, 1], [-1, -1], [-2, -1], [-2, 1], [2, 1],
@@ -639,7 +713,6 @@ def visible_to(row, col, atk_color, orig_r, orig_c):
                     directions[d][e] += 1   # if value >= 1 and is not a knight movement: increment by 1
                 if directions[d][e] < 0 and d <= 7:
                     directions[d][e] -= 1   # if value <= -1 and is not a knight movement: decrement by 1
-
     return True if return_true >= 1 else False
 
 
@@ -824,6 +897,7 @@ def color_chooser(button):
 
     old_player1 = player1
     old_player2 = player2
+    color_hex = None
 
     # resets all customizable colors
     if button == "rr":
@@ -976,7 +1050,7 @@ def placer(row, column):
         # if same king was already placed, delete old one as there can only be one king of each color
         for r in range(8):
             for c in range(8):
-                if board[r][c].cget("text") == "♚" and board[r][c].cget("text_color") == player1 and puzzle_piece == "♚":
+                if board[r][c].cget("text") == "♚" == puzzle_piece and board[r][c].cget("text_color") == player1:
                     board[r][c].configure(text="", text_color="blue", text_color_disabled="blue")
                     board[row][column].configure(text=puzzle_piece, text_color=player1, text_color_disabled=player1)
 
@@ -987,7 +1061,7 @@ def placer(row, column):
         # if same king was already placed, delete old one as there can only be one king of each color
         for r in range(8):
             for c in range(8):
-                if board[r][c].cget("text") == "♚" and board[r][c].cget("text_color") == player2 and puzzle_piece == "♚":
+                if board[r][c].cget("text") == "♚" == puzzle_piece and board[r][c].cget("text_color") == player2:
                     board[r][c].configure(text="", text_color="blue", text_color_disabled="blue")
                     board[row][column].configure(text=puzzle_piece, text_color=player2, text_color_disabled=player2)
     # removes color of the deleted piece
@@ -995,7 +1069,7 @@ def placer(row, column):
         board[row][column].configure(text=puzzle_piece, text_color="blue", text_color_disabled="blue")
 
 
-def clear_all(self):
+def clear_all(event):
     # clears all pieces on the board
     for r in range(8):
         for c in range(8):
