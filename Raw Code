@@ -21,6 +21,8 @@ last_loc = []   # coordinates of selected piece -> clear old position
 moves = 0   # tracking move count -> switch turns
 color = player1 if moves % 2 == 0 else player2   # color of the player whose turn it is
 enemy_color = player1 if color == player2 else player2   # opposite of color
+pinned_piece = []
+scoping_piece = []
 
 
 # CHECK RELATED #
@@ -324,6 +326,7 @@ def button_press(row, column):
             if check() and king_color_atk == color:
                 board[last_loc[0]][last_loc[1]].configure(text=last_piece, text_color=color, text_color_disabled=color)
                 board[row][column].configure(text=temp_piece, text_color=temp_color, text_color_disabled=temp_color)
+                toggle_buttons()   # avoid checkmates by attempting to make an illegal move with a pinned piece
 
             # disables all buttons if game ended
             elif check() and board[white_king[0]][white_king[1]].cget("fg_color") == "#023020" \
@@ -452,8 +455,10 @@ def promote(piece):
     # replaces pawn with the new piece
 
     for i in range(8):
-        if board[0][i].cget("text") == "♟" or board[7][i].cget("text") == "♟":
+        if board[0][i].cget("text") == "♟":
             board[0][i].configure(text=piece)
+            last_piece = piece
+        elif board[7][i].cget("text") == "♟":
             board[7][i].configure(text=piece)
             last_piece = piece
 
@@ -633,8 +638,9 @@ def check_block(king_r, king_c, blocking_color):
             # if position can be seen by own piece -> attack can be blocked
             if board[r][c].cget("text") == "" and visible_to(r, c, blocking_color, r, c):
                 # attacks can only be blocked if the blocking piece is in between king and attacker and not pinned
-                if loc != king_loc and not atk_piece.count(loc):
-                    return True
+                for j in range(len(pinned_piece)):
+                    if loc != king_loc and not atk_piece.count(loc) and not scoping_piece.count(pinned_piece[j]):
+                        return True
 
         for e in range(0, 2):
             if directions[dir_atk][e] > 0 and dir_atk <= 7:
@@ -655,6 +661,8 @@ def visible_to(row, col, atk_color, orig_r, orig_c):
     pawn_dir = 1 if atk_color == player1 else -1
     pawn_color = player1 if atk_color == player1 else player2
     return_true = 0   # allows for-loop to continue even if a statement would return True
+    pot_pin = {}
+    pinned_piece.clear()
 
     # pawns can create checks and back up other pieces that attack the enemy king
     if 0 <= row + pawn_dir <= 7 and 0 <= col + 1 <= 7:
@@ -680,20 +688,30 @@ def visible_to(row, col, atk_color, orig_r, orig_c):
             if 0 <= r <= 7 and 0 <= c <= 7:
                 # if there is a queen or a bishop in diagonal line with the location
                 if d <= 3 and board[r][c].cget("text_color") == atk_color and orig_loc != location:
-                    if board[r][c].cget("text") == "♛" or board[r][c].cget("text") == "♜":
-                        if board[row][col].cget("text") == "♚":
-                            atk_piece.append([r, c])
-                            dir_atk = d
-                        return_true += 1
+                    if board[r][c].cget("text") == "♛" or board[r][c].cget("text") == "♜":   # hereafter
+                        scoping_piece.append([r, c])
+                        if not pot_pin.keys().__contains__(d):
+                            if board[row][col].cget("text") == "♚":
+                                atk_piece.append([r, c])
+                                dir_atk = d
+                            if not pinned_piece.count(d):
+                                return_true += 1
+                        elif pot_pin.keys().__contains__(d) and not pinned_piece.count(pot_pin.get(d)):
+                            pinned_piece.append(pot_pin.get(d))
 
                 # if there is a queen or a rook in straight line with the location
                 elif d <= 7:
                     if d >= 4 and board[r][c].cget("text_color") == atk_color and orig_loc != location:
                         if board[r][c].cget("text") == "♛" or board[r][c].cget("text") == "♝":
-                            if board[row][col].cget("text") == "♚":
-                                atk_piece.append([r, c])
-                                dir_atk = d
-                            return_true += 1
+                            scoping_piece.append([r, c])
+                            if not pot_pin.keys().__contains__(d):
+                                if board[row][col].cget("text") == "♚":
+                                    atk_piece.append([r, c])
+                                    dir_atk = d
+                                if not pinned_piece.count(d):
+                                    return_true += 1
+                            elif pot_pin.keys().__contains__(d) and not pinned_piece.count(pot_pin.get(d)):
+                                pinned_piece.append(pot_pin.get(d))
 
                 # if there is a knight that can potentially jump to the location
                 elif d >= 8 and board[r][c].cget("text_color") == atk_color and orig_loc != location:
@@ -705,14 +723,14 @@ def visible_to(row, col, atk_color, orig_r, orig_c):
 
                 # prevents testing the next squares in line if the direction is blocked by a piece
                 if board[r][c].cget("text") != "" and location != [orig_r, orig_c]:
-                    directions[d][0] = 0
-                    directions[d][1] = 0
+                    pot_pin.update({d: [r, c]})
 
             for e in range(0, 2):
                 if directions[d][e] > 0 and d <= 7:
                     directions[d][e] += 1   # if value >= 1 and is not a knight movement: increment by 1
                 if directions[d][e] < 0 and d <= 7:
                     directions[d][e] -= 1   # if value <= -1 and is not a knight movement: decrement by 1
+    pot_pin.clear()
     return True if return_true >= 1 else False
 
 
