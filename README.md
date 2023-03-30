@@ -8,6 +8,7 @@ Hi, this is a very early version of my Chess App written in Python with TomSchim
 Chess games can already be played with only a few game interactions missing:
 
     • Checkmates depending on a piece being pinned to the king
+    • Stalemate by three-fold
 
 Apart from that I've made sure to add every other rule I could think of, even the less common ones:
     
