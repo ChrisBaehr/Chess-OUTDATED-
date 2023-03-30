@@ -5,18 +5,15 @@ Hi, this is a very early version of my Chess App written in Python with TomSchim
 ⠀
 ### Playability
 
-Chess games can already be played with only a few game interactions missing:
+The threefold repetition stalemate is the only game interaction currently missing. 
 
-    • Checkmates depending on a piece being pinned to the king
-    • Stalemate by three-fold
-
-Apart from that I've made sure to add every other rule I could think of, even the less common ones:
+Apart from that I've made sure to add every other rule I could think of, even the uncommon ones:
     
-    • Pinned pieces
-    • Castling king and queen side
-    • Discovered checks
-    • Forced king move
-    • En passant
+    • Castling
+    • Discovered Checks 
+    • Pinned Pieces (+checkmates depending on a pinned piece)
+    • Forced Stalemate (no legal moves/ not enough pieces to checkmate)
+    • En Passant
 
 ⠀
 ### Code Quality
